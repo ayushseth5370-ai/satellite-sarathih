@@ -17,7 +17,6 @@ r_earth = 6371
 r_dead = r_earth + 400     # Decaying dangerous orbit
 r_safe = r_earth + 1500    # Graveyard orbit
 
-# Background Reference Orbits
 theta_full = np.linspace(0, 2*np.pi, 120)
 x_dead_full = r_dead * np.cos(theta_full)
 y_dead_full = r_dead * np.sin(theta_full)
@@ -27,104 +26,111 @@ x_safe_full = r_safe * np.cos(theta_full)
 y_safe_full = r_safe * np.sin(theta_full)
 z_safe_full = np.zeros_like(theta_full)
 
-# The Transfer Trajectory (Drifting outward after the thrust)
+# The Transfer Trajectory 
 num_frames = 90
 transfer_angles = np.linspace(0, np.pi, num_frames)
 r_transfer = np.linspace(r_dead, r_safe, num_frames)
 
 x_transfer = r_transfer * np.cos(transfer_angles)
 y_transfer = r_transfer * np.sin(transfer_angles)
-z_transfer = r_transfer * np.sin(transfer_angles) * 0.05 # Slight inclination
+z_transfer = r_transfer * np.sin(transfer_angles) * 0.05 
 
 # ==========================================
 # 2. BUILD THE PHOTOREALISTIC SCENE
 # ==========================================
 fig = go.Figure()
 
-# TRACE 0: Photorealistic Earth (High-Res)
-u = np.linspace(0, 2 * np.pi, 100)
-v = np.linspace(0, np.pi, 100)
-x_e = r_earth * np.outer(np.cos(u), np.sin(v))
-y_e = r_earth * np.outer(np.sin(u), np.sin(v))
-z_e = r_earth * np.outer(np.ones(np.size(u)), np.cos(v))
+# TRACE 0: Ultra-Realistic Topographical Earth (Matches your Photo)
+u = np.linspace(0, 2 * np.pi, 150) # High resolution
+v = np.linspace(0, np.pi, 150)
+x_base = r_earth * np.outer(np.cos(u), np.sin(v))
+y_base = r_earth * np.outer(np.sin(u), np.sin(v))
+z_base = r_earth * np.outer(np.ones(np.size(u)), np.cos(v))
 
-# Colors mimicking real satellite imagery (Deep space edge, dark oceans, muted land)
-photoreal_colors = [
-    [0.0, '#01091c'], [0.2, '#041738'], [0.4, '#122e15'], 
-    [0.7, '#382f1f'], [0.9, '#63625e'], [1.0, '#ffffff']
+# Creating 3D bumps for mountains/terrain
+terrain = np.sin(6*u)*np.cos(6*v) + 0.5*np.sin(15*u)*np.cos(15*v)
+z_topo = z_base + (terrain * 120) # Exaggerated height for light to catch
+
+# Colorscale mimicking the provided image (Deep blue to dark green to brown to white)
+photo_colors = [
+    [0.0, '#0a1d56'],  # Deep blue ocean
+    [0.4, '#15316b'],  # Shallow water
+    [0.45, '#2e4a22'], # Dark green land (Vegetation)
+    [0.6, '#473d26'],  # Brown land/hills
+    [0.8, '#857865'],  # Rocky mountains
+    [1.0, '#ffffff']   # Shiny snow peaks / clouds
 ]
 
 fig.add_trace(go.Surface(
-    x=x_e, y=y_e, z=z_e, colorscale=photoreal_colors, showscale=False,
-    lighting=dict(ambient=0.05, diffuse=0.9, specular=0.8, roughness=0.3, fresnel=0.2),
+    x=x_base, y=y_base, z=z_topo, 
+    surfacecolor=z_topo, # Maps height to the colors above
+    colorscale=photo_colors, showscale=False,
+    # High Specular lighting makes the mountains shine exactly like your photo
+    lighting=dict(ambient=0.15, diffuse=0.8, specular=1.5, roughness=0.2, fresnel=0.1),
     name='Earth Topography'
 ))
 
-# TRACE 1 & 2: Orbit Lines (Thin, professional, non-distracting)
+# TRACE 1 & 2: Orbit Lines
 fig.add_trace(go.Scatter3d(
     x=x_dead_full, y=y_dead_full, z=z_dead_full, mode='lines',
-    line=dict(color='rgba(255, 50, 50, 0.3)', width=2, dash='dash'), name='Critical Orbit'
+    line=dict(color='rgba(255, 50, 50, 0.4)', width=2, dash='dash'), name='Critical Orbit'
 ))
 fig.add_trace(go.Scatter3d(
     x=x_safe_full, y=y_safe_full, z=z_safe_full, mode='lines',
-    line=dict(color='rgba(50, 255, 50, 0.3)', width=2, dash='dash'), name='Graveyard Orbit'
+    line=dict(color='rgba(50, 255, 50, 0.4)', width=2, dash='dash'), name='Graveyard Orbit'
 ))
 
-# TRACE 3: Transfer Path (Faded line showing where it will drift)
+# TRACE 3: Transfer Path
 fig.add_trace(go.Scatter3d(
     x=x_transfer, y=y_transfer, z=z_transfer, mode='lines',
-    line=dict(color='rgba(150, 150, 150, 0.2)', width=1), name='Predicted Coasting Path'
+    line=dict(color='rgba(150, 150, 150, 0.2)', width=1), name='Coasting Path'
 ))
 
-# TRACE 4: The Dead Satellite (Dark Grey, dead piece of junk)
+# TRACE 4: Defunct Satellite
 fig.add_trace(go.Scatter3d(
     x=[x_transfer[0]], y=[y_transfer[0]], z=[z_transfer[0]], mode='markers',
     marker=dict(size=7, color='#666666', symbol='square'), name='Defunct Satellite'
 ))
 
-# TRACE 5: Sārathiḥ (Active Tug - Cyan)
+# TRACE 5: Sārathiḥ Tug
 fig.add_trace(go.Scatter3d(
     x=[x_transfer[0] - 120], y=[y_transfer[0] - 120], z=[z_transfer[0]], mode='markers',
     marker=dict(size=5, color='#00FFFF', symbol='diamond'), name='Sārathiḥ Spacecraft'
 ))
 
-# TRACE 6: Thruster Plume (Initially invisible)
+# TRACE 6: Thruster Plume (Initially off)
 fig.add_trace(go.Scatter3d(
     x=[x_transfer[0]-120, x_transfer[0]-120], y=[y_transfer[0]-120, y_transfer[0]-120], z=[0,0], 
     mode='lines', line=dict(color='rgba(0,0,0,0)', width=4), name='Thruster Plume'
 ))
 
 # ==========================================
-# 3. ANIMATION LOGIC (The "Little Thrust" & Drift)
+# 3. ANIMATION LOGIC (Short Thrust & Drift)
 # ==========================================
 frames = []
 for k in range(num_frames):
     x, y, z = x_transfer[k], y_transfer[k], z_transfer[k]
     tug_x, tug_y = x - 120, y - 120
     
-    # THE SHORT THRUST LOGIC: 
-    # Engine fires ONLY between frame 10 and 25 (Just a short push).
+    # Engine fires ONLY between frame 10 and 25 (Short thrust)
     if 10 <= k <= 25:
-        flame_x = [tug_x, tug_x - 300]
-        flame_y = [tug_y, tug_y - 300]
+        flame_x = [tug_x, tug_x - 350]
+        flame_y = [tug_y, tug_y - 350]
         flame_z = [z, z]
-        flame_color = 'rgba(255, 120, 0, 1.0)' # Bright plasma orange
-        flame_width = 5
+        flame_color = 'rgba(255, 150, 0, 1.0)' 
+        flame_width = 6
     else:
-        flame_x = [tug_x, tug_x]
-        flame_y = [tug_y, tug_y]
-        flame_z = [z, z]
-        flame_color = 'rgba(0,0,0,0)' # Invisible (Engine off, just drifting)
+        flame_x, flame_y, flame_z = [tug_x, tug_x], [tug_y, tug_y], [z, z]
+        flame_color = 'rgba(0,0,0,0)' 
         flame_width = 0
 
     frames.append(go.Frame(
         data=[
-            go.Scatter3d(x=[x], y=[y], z=[z]),                   # Update Trace 4 (Dead Sat)
-            go.Scatter3d(x=[tug_x], y=[tug_y], z=[z]),           # Update Trace 5 (Tug)
-            go.Scatter3d(x=flame_x, y=flame_y, z=flame_z, 
-                         line=dict(color=flame_color, width=flame_width)) # Update Trace 6 (Flame)
+            go.Scatter3d(x=[x], y=[y], z=[z]),                   
+            go.Scatter3d(x=[tug_x], y=[tug_y], z=[z]),           
+            go.Scatter3d(x=flame_x, y=flame_y, z=flame_z, line=dict(color=flame_color, width=flame_width)) 
         ],
-        traces=[4, 5, 6], # Tell Plotly exactly which traces to update
+        traces=[4, 5, 6], 
         name=f'frame{k}'
     ))
 
@@ -136,11 +142,11 @@ fig.frames = frames
 fig.update_layout(
     scene=dict(
         xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False),
-        bgcolor='#000000', # True black
-        camera=dict(eye=dict(x=1.3, y=-1.5, z=0.5)) # Perfect cinematic angle
+        bgcolor='#000000', 
+        camera=dict(eye=dict(x=1.3, y=-1.5, z=0.5)) 
     ),
     margin=dict(l=0, r=0, t=0, b=0),
-    height=600,
+    height=650,
     legend=dict(x=0.01, y=0.95, font=dict(color="white"), bgcolor="rgba(0,0,0,0)"),
     updatemenus=[dict(
         type="buttons",
