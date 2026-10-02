@@ -1,186 +1,171 @@
 import streamlit as st
 import plotly.graph_objects as go
 import numpy as np
+import pandas as pd
 
 # ==========================================
 # PAGE CONFIGURATION (Professional Aerospace HUD)
 # ==========================================
-st.set_page_config(page_title="Satellite Sārathiḥ: ADR Mission", layout="wide")
-st.markdown("<style>body, .stApp {background-color: #000000; color: #FFFFFF; font-family: 'Helvetica Neue', sans-serif;}</style>", unsafe_allow_html=True)
-st.markdown("<h2 style='text-align: center; color: #FFFFFF; font-weight: 300; letter-spacing: 3px;'>NAKSHATRA: SATELLITE SĀRATHIḤ</h2>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #00FFFF; font-size: 13px; letter-spacing: 1px;'>ACTIVE DEBRIS REMOVAL & ATMOSPHERIC RE-ENTRY SIMULATOR</p>", unsafe_allow_html=True)
+st.set_page_config(page_title="Satellite Sārathiḥ: Ultimate Dashboard", layout="wide")
+st.markdown("<style>body, .stApp {background-color: #010103; color: #FFFFFF; font-family: 'Segoe UI', sans-serif;}</style>", unsafe_allow_html=True)
+
+st.markdown("<h1 style='text-align: center; color: #FFFFFF; font-weight: 400; letter-spacing: 3px;'>NAKSHATRA: SATELLITE SĀRATHIḤ</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #00FFFF; font-size: 14px; letter-spacing: 2px;'>ACTIVE DEBRIS REMOVAL, RADAR PROXIMITY & MITIGATION SYSTEM</p>", unsafe_allow_html=True)
+st.divider()
 
 # ==========================================
-# 1. ORBITAL MECHANICS & SCENARIO MATH
+# 1. LIVE METRICS & STATUS PANEL (Top Display)
+# ==========================================
+m1, m2, m3, m4, m5 = st.columns(5)
+m1.metric("Scenario 1", "Atmospheric Re-entry", "Thermal Dissolution")
+m2.metric("Scenario 2", "Heavy Sat Push", "Impulsive Burn Armed")
+m3.metric("Safety Protocol", "Zero Orbital Litter", "Fully Compliant")
+m4.metric("Risk Engine", "Active (0-100)", "Nominal")
+m5.metric("System Status", "All Systems Online", "Loop Ready")
+
+st.divider()
+
+# ==========================================
+# 2. ORBITAL MECHANICS & SIMULATION MATH
 # ==========================================
 r_earth = 6371 
+num_frames = 60
 
-# Scenario 1: Small Debris Atmospheric Re-entry (Burns up)
-t_burn = np.linspace(0, 1, 40)
-# Falls from 300km down into the atmosphere (r = 6371 -> 6300)
-r_reentry = np.linspace(r_earth + 250, r_earth + 20, 40)
-x_burn = r_reentry * np.cos(t_burn * np.pi * 0.5)
-y_burn = r_reentry * np.sin(t_burn * np.pi * 0.5)
+# Scenario 1: Small Debris Atmospheric Re-entry (Falls and burns up)
+t_burn = np.linspace(0, 1, num_frames)
+r_reentry = np.linspace(r_earth + 300, r_earth + 20, num_frames)
+x_burn = r_reentry * np.cos(t_burn * np.pi * 0.4)
+y_burn = r_reentry * np.sin(t_burn * np.pi * 0.4)
 z_burn = np.zeros_like(t_burn)
 
 # Scenario 2: Large Satellite Orbit Transfer (Impulsive Push to Graveyard)
-t_transfer = np.linspace(0, np.pi * 0.8, 60)
-r_transfer = np.linspace(r_earth + 400, r_earth + 1600, 60)
+t_transfer = np.linspace(0, np.pi * 0.7, num_frames)
+r_transfer = np.linspace(r_earth + 400, r_earth + 1600, num_frames)
 x_trans = r_transfer * np.cos(t_transfer)
 y_trans = r_transfer * np.sin(t_transfer)
 z_trans = r_transfer * np.sin(t_transfer) * 0.1
 
 # ==========================================
-# 2. BUILD THE PHOTOREALISTIC SCENE
+# 3. BUILD THE PHOTOREALISTIC 3D SCENE
 # ==========================================
-fig = go.Figure()
+fig_3d = go.Figure()
 
-# TRACE 0: Photorealistic Earth (Matches your exact high-end reference)
-u = np.linspace(0, 2 * np.pi, 120)
-v = np.linspace(0, np.pi, 120)
+# Photorealistic Earth Topography
+u = np.linspace(0, 2 * np.pi, 100)
+v = np.linspace(0, np.pi, 100)
 x_e = r_earth * np.outer(np.cos(u), np.sin(v))
 y_e = r_earth * np.outer(np.sin(u), np.sin(v))
 z_e = r_earth * np.outer(np.ones(np.size(u)), np.cos(v))
 
-# Earth topographical texture map simulation
 terrain = np.sin(5*u)*np.cos(5*v) + 0.3*np.sin(12*u)*np.cos(12*v)
 z_topo = z_e + (terrain * 80)
 
 earth_colors = [
-    [0.0, '#020b24'],  # Deep abyss ocean
-    [0.3, '#0b2654'],  # Blue ocean shelf
-    [0.5, '#1e4d2b'],  # Green forests / land
-    [0.7, '#594429'],  # Brown mountains
-    [0.9, '#a39685'],  # Rocky peaks
-    [1.0, '#ffffff']   # Polar snow / clouds
+    [0.0, '#020b24'], [0.3, '#0b2654'], [0.5, '#1e4d2b'], 
+    [0.7, '#594429'], [0.9, '#a39685'], [1.0, '#ffffff']
 ]
 
-fig.add_trace(go.Surface(
-    x=x_e, y=y_e, z=z_topo,
-    surfacecolor=z_topo, colorscale=earth_colors, showscale=False,
-    lighting=dict(ambient=0.1, diffuse=0.85, specular=1.2, roughness=0.25, fresnel=0.1),
-    name='Earth'
+fig_3d.add_trace(go.Surface(
+    x=x_e, y=y_e, z=z_topo, surfacecolor=z_topo, colorscale=earth_colors, showscale=False,
+    lighting=dict(ambient=0.1, diffuse=0.85, specular=1.2, roughness=0.25, fresnel=0.1), name='Earth'
 ))
 
-# TRACE 1: Atmospheric Burn-up Path (Small Debris)
-fig.add_trace(go.Scatter3d(
-    x=x_burn, y=y_burn, z=z_burn, mode='lines',
-    line=dict(color='rgba(255, 69, 0, 0.6)', width=3, dash='solid'), name='Re-entry Trajectory'
-))
+# Trajectory Paths
+fig_3d.add_trace(go.Scatter3d(x=x_burn, y=y_burn, z=z_burn, mode='lines', line=dict(color='rgba(255, 69, 0, 0.4)', width=2), name='Re-entry Path'))
+fig_3d.add_trace(go.Scatter3d(x=x_trans, y=y_trans, z=z_trans, mode='lines', line=dict(color='rgba(0, 255, 255, 0.3)', width=2, dash='dash'), name='Graveyard Transfer Path'))
 
-# TRACE 2: Graveyard Transfer Path (Large Satellite Push)
-fig.add_trace(go.Scatter3d(
-    x=x_trans, y=y_trans, z=z_trans, mode='lines',
-    line=dict(color='rgba(0, 255, 255, 0.4)', width=2, dash='dash'), name='Orbit Raising Path'
-))
+# Moving Objects (Initial State)
+fig_3d.add_trace(go.Scatter3d(x=[x_burn[0]], y=[y_burn[0]], z=[z_burn[0]], mode='markers', marker=dict(size=8, color='#FF4500', symbol='circle'), name='Burning Debris'))
+fig_3d.add_trace(go.Scatter3d(x=[x_trans[0]], y=[y_trans[0]], z=[z_trans[0]], mode='markers', marker=dict(size=8, color='#888888', symbol='square'), name='Defunct Heavy Sat'))
+fig_3d.add_trace(go.Scatter3d(x=[x_trans[0] - 100], y=[y_trans[0] - 100], z=[z_trans[0]], mode='markers', marker=dict(size=7, color='#00FFFF', symbol='diamond'), name='Sārathiḥ Tug'))
+fig_3d.add_trace(go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 0], mode='lines', line=dict(color='rgba(0,0,0,0)', width=5), name='Impulsive Flame'))
 
-# TRACE 3: Small Re-entering Debris (Burning Object)
-fig.add_trace(go.Scatter3d(
-    x=[x_burn[0]], y=[y_burn[0]], z=[z_burn[0]], mode='markers',
-    marker=dict(size=6, color='#FF4500', symbol='circle', line=dict(color='white', width=1)),
-    name='Small Debris (Re-entry)'
-))
-
-# TRACE 4: Large Defunct Satellite
-fig.add_trace(go.Scatter3d(
-    x=[x_trans[0]], y=[y_trans[0]], z=[z_trans[0]], mode='markers',
-    marker=dict(size=8, color='#888888', symbol='square'), name='Defunct Heavy Satellite'
-))
-
-# TRACE 5: Sārathiḥ Active Tug Spacecraft
-fig.add_trace(go.Scatter3d(
-    x=[x_trans[0] - 100], y=[y_trans[0] - 100], z=[z_trans[0]], mode='markers',
-    marker=dict(size=7, color='#00FFFF', symbol='diamond', line=dict(color='white', width=1)),
-    name='Sārathiḥ Spacecraft'
-))
-
-# TRACE 6: Thruster Plume (Impulsive Burn Flame)
-fig.add_trace(go.Scatter3d(
-    x=[0, 0], y=[0, 0], z=[0, 0], mode='lines',
-    line=dict(color='rgba(0,0,0,0)', width=5), name='Impulsive Burn'
-))
-
-# ==========================================
-# 3. ADVANCED SEQUENTIAL ANIMATION
-# ==========================================
+# Animation Frames
 frames = []
-total_frames = 60
-
-for k in range(total_frames):
-    # Part A: Small debris re-entry (First 35 frames)
-    if k < 40:
-        idx = min(k, 39)
-        bx, by, bz = x_burn[idx], y_burn[idx], z_burn[idx]
-        # Debris glows bright orange/white as it burns in atmosphere
-        b_color = '#FFFFFF' if idx < 30 else '#FF2200' 
-        b_size = 8 if idx < 30 else 3 # Shrinks as it burns up
+for k in range(num_frames):
+    bx, by, bz = x_burn[k], y_burn[k], z_burn[k]
+    if k < 45:
+        b_color, b_size = '#FFFFFF', 8
+    elif k < 58:
+        b_color, b_size = '#FF2200', 5
     else:
-        bx, by, bz = x_burn[-1], y_burn[-1], z_burn[-1]
-        b_color = 'rgba(0,0,0,0)' # Disappears (burned completely)
-        b_size = 0
+        b_color, b_size = 'rgba(0,0,0,0)', 0
 
-    # Part B: Large satellite push maneuver (Active across all frames)
-    idx_t = min(k, 59)
-    tx, ty, tz = x_trans[idx_t], y_trans[idx_t], z_trans[idx_t]
+    tx, ty, tz = x_trans[k], y_trans[k], z_trans[k]
     tug_x, tug_y = tx - 100, ty - 100
 
-    # Single Impulsive Thrust between frame 10 and 22
-    if 10 <= k <= 22:
-        flame_x = [tug_x, tug_x - 300]
-        flame_y = [tug_y, tug_y - 300]
-        flame_z = [tz, tz]
-        flame_color = 'rgba(255, 140, 0, 1.0)'
-        flame_width = 7
+    if 10 <= k <= 25:
+        flame_x, flame_y, flame_z = [tug_x, tug_x - 300], [tug_y, tug_y - 300], [tz, tz]
+        flame_color, flame_width = 'rgba(255, 140, 0, 1.0)', 6
     else:
-        flame_x = [tug_x, tug_x]
-        flame_y = [tug_y, tug_y]
-        flame_z = [tz, tz]
-        flame_color = 'rgba(0,0,0,0)'
-        flame_width = 0
+        flame_x, flame_y, flame_z = [tug_x, tug_x], [tug_y, tug_y], [tz, tz]
+        flame_color, flame_width = 'rgba(0,0,0,0)', 0
 
     frames.append(go.Frame(
         data=[
-            go.Scatter3d(x=[bx], y=[by], z=[bz], marker=dict(size=b_size, color=b_color)), # Trace 3: Burning debris
-            go.Scatter3d(x=[tx], y=[ty], z=[tz]),                                         # Trace 4: Heavy sat
-            go.Scatter3d(x=[tug_x], y=[tug_y], z=[tz]),                                  # Trace 5: Tug
-            go.Scatter3d(x=flame_x, y=flame_y, z=flame_z, line=dict(color=flame_color, width=flame_width)) # Trace 6: Flame
+            go.Scatter3d(x=[bx], y=[by], z=[bz], marker=dict(size=b_size, color=b_color)),
+            go.Scatter3d(x=[tx], y=[ty], z=[tz]),
+            go.Scatter3d(x=[tug_x], y=[tug_y], z=[tz]),
+            go.Scatter3d(x=flame_x, y=flame_y, z=flame_z, line=dict(color=flame_color, width=flame_width))
         ],
         traces=[3, 4, 5, 6],
         name=f'frame{k}'
     ))
 
-fig.frames = frames
+fig_3d.frames = frames
 
-# ==========================================
-# 4. CINEMATIC SCENE SETUP & PLAY BUTTON
-# ==========================================
-fig.update_layout(
-    scene=dict(
-        xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False),
-        bgcolor='#000000',
-        camera=dict(eye=dict(x=1.2, y=-1.5, z=0.5))
-    ),
-    margin=dict(l=0, r=0, t=0, b=0),
-    height=620,
+fig_3d.update_layout(
+    scene=dict(xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False), bgcolor='#000000', camera=dict(eye=dict(x=1.2, y=-1.5, z=0.5))),
+    margin=dict(l=0, r=0, t=0, b=0), height=520,
     legend=dict(x=0.01, y=0.95, font=dict(color="white"), bgcolor="rgba(0,0,0,0)"),
     updatemenus=[dict(
-        type="buttons",
-        showactive=False,
-        x=0.5, y=0.05, xanchor="center", yanchor="bottom",
+        type="buttons", showactive=False, x=0.5, y=0.02, xanchor="center", yanchor="bottom",
         buttons=[dict(
-            label="▶ RUN DUAL-MODE ADR SIMULATION",
+            label="▶ START DUAL-SCENARIO SIMULATION",
             method="animate",
-            args=[None, {"frame": {"duration": 90, "redraw": True}, "fromcurrent": True, "mode": "immediate", "transition": {"duration": 0}, "direction": "forward", "repeat": True}]
+            args=[None, {"frame": {"duration": 70, "redraw": True}, "fromcurrent": True, "mode": "immediate", "transition": {"duration": 0}, "direction": "forward", "repeat": True}]
         )]
     )]
 )
 
-st.plotly_chart(fig, use_container_width=True)
+# ==========================================
+# 4. DASHBOARD LAYOUT (Split View: 3D + Radar & Ranked List)
+# ==========================================
+col_left, col_right = st.columns([1.3, 1])
 
-# Clean Telemetry HUD
-st.markdown("<hr style='border: 1px solid #111;'>", unsafe_allow_html=True)
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Scenario 1 (Small)", "Atmospheric Re-entry", "Thermal Dissolution")
-c2.metric("Scenario 2 (Heavy)", "Active Tug (Sārathiḥ)", "Impulsive Burn Executed")
-c3.metric("Safety Protocol", "Zero Orbital Litter", "Fully Compliant")
-c4.metric("Status", "Operational", "Loop Active")
+with col_left:
+    st.markdown("### 3D AEROSPACE SIMULATION VIEW")
+    st.plotly_chart(fig_3d, use_container_width=True)
+
+with col_right:
+    st.markdown("### RADAR PROXIMITY VIEW (Slide 6)")
+    
+    np.random.seed(42)
+    radar_dists = np.random.uniform(5, 180, 25)
+    radar_angles = np.random.uniform(0, 360, 25)
+    radar_colors = ['#FF2222' if d < 35 else '#FFAA00' if d < 90 else '#00FFFF' for d in radar_dists]
+    
+    fig_radar = go.Figure()
+    fig_radar.add_trace(go.Scatterpolar(
+        r=radar_dists, theta=radar_angles, mode='markers',
+        marker=dict(color=radar_colors, size=9, line=dict(color='white', width=1)),
+        hoverinfo='r+theta'
+    ))
+    fig_radar.update_layout(
+        polar=dict(
+            bgcolor='#0A0A12',
+            angularaxis=dict(showticklabels=False, gridcolor='#222233'),
+            radialaxis=dict(range=[0, 180], showticklabels=True, gridcolor='#333344')
+        ),
+        margin=dict(l=20, r=20, t=20, b=20), height=220, showlegend=False
+    )
+    st.plotly_chart(fig_radar, use_container_width=True)
+
+    st.markdown("### RANKED HIGH-RISK DEBRIS LIST")
+    df_risk = pd.DataFrame({
+        "Debris ID": ["DEB-8801", "DEB-4029", "COSMOS-14", "SL-12 R/B"],
+        "Miss Dist (km)": [2.1, 4.5, 12.3, 24.0],
+        "Risk Score": [98, 89, 74, 52],
+        "Action Status": ["Tug Deployed", "Monitor", "Warning", "Safe"]
+    })
+    st.dataframe(df_risk, use_container_width=True)
