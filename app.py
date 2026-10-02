@@ -1,170 +1,133 @@
 import streamlit as st
 import plotly.graph_objects as go
 import numpy as np
-import pandas as pd
-from skyfield.api import load, EarthSatellite
 
 # ==========================================
-# PAGE CONFIG & PPT THEME
+# PAGE CONFIGURATION
 # ==========================================
-st.set_page_config(page_title="Satellite Sārathiḥ Dashboard", layout="wide")
-st.markdown("<h1 style='text-align: center; color: #4b0082;'>SATELLITE SĀRATHIḤ</h1>", unsafe_allow_html=True)
-st.markdown("<h4 style='text-align: center;'>SPACE DEBRIS DETECTION, TRACKING AND MITIGATION PLANNING</h4>", unsafe_allow_html=True)
-st.divider()
+st.set_page_config(page_title="Satellite Sārathiḥ: Mitigation", layout="wide")
+st.markdown("<style>body, .stApp {background-color: #020202; color: white;}</style>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center; color: #FFFFFF; font-weight: 300; font-family: sans-serif;'>NAKSHATRA: MITIGATION PLANNER</h2>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #888888;'>Active Debris Removal: Initiating Orbit Raising Maneuver</p>", unsafe_allow_html=True)
 
-# ==========================================
-# STEP 1 & 2: INGEST & TRACK (PPT Slide 4 Logic)
-# ==========================================
-# Ingesting TLE Data & Propagating with SGP4 (Simulated for real-time app)
-ts = load.timescale()
-t = ts.now()
-
-# Simulating 50 Debris objects around Target Spacecraft
-np.random.seed(42)
-num_debris = 50
-debris_ids = [f"DEB-080-{1000+i}" for i in range(num_debris)]
-distances_km = np.random.uniform(5, 150, num_debris)
-relative_velocities = np.random.uniform(5, 15, num_debris) # km/s
-angles = np.random.uniform(0, 360, num_debris)
+fig = go.Figure()
 
 # ==========================================
-# STEP 3 & 4: SCREEN & SCORE (PPT Risk Engine - Slide 5)
+# 1. ULTRA-REALISTIC SMOOTH EARTH
 # ==========================================
-# Conjunction Analysis: Miss distance, relative velocity -> Risk Score (0-100)
-risk_scores = []
-risk_zones = []
-colors = []
+u = np.linspace(0, 2 * np.pi, 100)
+v = np.linspace(0, np.pi, 100)
+r_earth = 6371 
+x_earth = r_earth * np.outer(np.cos(u), np.sin(v))
+y_earth = r_earth * np.outer(np.sin(u), np.sin(v))
+z_earth = r_earth * np.outer(np.ones(np.size(u)), np.cos(v))
 
-for dist in distances_km:
-    if dist <= 10:
-        score = np.random.randint(85, 100) # Critical (0-100 risk score)
-        risk_zones.append("CRITICAL")
-        colors.append("#FF0000") # Red
-    elif dist <= 50:
-        score = np.random.randint(40, 84) # Warning
-        risk_zones.append("WARNING")
-        colors.append("#FFA500") # Orange
-    else:
-        score = np.random.randint(0, 39) # Safe
-        risk_zones.append("SAFE")
-        colors.append("#00FF00") # Green
-    risk_scores.append(score)
+# Deep space photorealistic color palette (Oceans, subtle landmasses, clouds)
+photoreal_colors = [
+    [0.0, '#000514'],     # Deep space edge/abyss
+    [0.2, '#001D3D'],     # Deep ocean
+    [0.5, '#003566'],     # Shallow ocean
+    [0.7, '#2F3E2B'],     # Dark landmass
+    [1.0, '#D3D3D3']      # Clouds/Ice
+]
+
+fig.add_trace(go.Surface(
+    x=x_earth, y=y_earth, z=z_earth,
+    colorscale=photoreal_colors, showscale=False,
+    # Professional lighting: Strong diffuse light, sharp specular reflection for oceans
+    lighting=dict(ambient=0.1, diffuse=0.8, specular=0.6, roughness=0.4, fresnel=0.2),
+    name='Earth'
+))
 
 # ==========================================
-# STEP 5: ACT - OUTPUT DASHBOARD (PPT Slide 5 & 6)
+# 2. ORBITAL MECHANICS (The "Push" Maneuver)
 # ==========================================
-col1, col2 = st.columns([1.5, 1])
+angles = np.linspace(0, 2*np.pi, 200)
 
-# --- LEFT COLUMN: 3D REALISTIC EARTH ---
-with col1:
-    st.markdown("### 3D ORBIT VIEW (Realistic Terrain)")
-    fig_3d = go.Figure()
+# Orbit 1: Current Danger Orbit (Where the dead satellite is)
+r_old = r_earth + 400
+x_old = r_old * np.cos(angles)
+y_old = r_old * np.sin(angles)
+z_old = np.zeros_like(angles)
 
-    # Generating Highly Realistic Topographical Earth (Matching your photo)
-    u = np.linspace(0, 2 * np.pi, 120)
-    v = np.linspace(0, np.pi, 120)
-    r_earth = 6371 
-    x_earth = r_earth * np.outer(np.cos(u), np.sin(v))
-    y_earth = r_earth * np.outer(np.sin(u), np.sin(v))
-    z_earth = r_earth * np.outer(np.ones(np.size(u)), np.cos(v))
-    
-    # Adding noise to z to simulate mountains/terrain mathematically
-    terrain = np.sin(5*u)*np.cos(5*v) + np.sin(10*u)*np.cos(10*v)
-    z_earth_textured = z_earth + (terrain * 50) 
+# Orbit 2: Target Safe Graveyard Orbit (Where we are pushing it)
+r_new = r_earth + 1200
+# Tilting the new orbit slightly for 3D depth
+x_new = r_new * np.cos(angles)
+y_new = r_new * np.sin(angles) * np.cos(0.2)
+z_new = r_new * np.sin(angles) * np.sin(0.2)
 
-    # Colorscale matching your photo (Deep ocean, green land, brown mountains, white snow peaks)
-    realistic_colors = [
-        [0.0, '#000033'],     # Very deep ocean
-        [0.2, '#0044cc'],     # Ocean
-        [0.3, '#228b22'],     # Green land/forests
-        [0.6, '#8b4513'],     # Brown mountains
-        [0.8, '#d2b48c'],     # Dry high mountains
-        [1.0, '#ffffff']      # Snow caps / clouds
-    ]
+# Transfer Trajectory: The path taken while pushing
+transfer_angles = np.linspace(0, np.pi, 100)
+r_transfer = np.linspace(r_old, r_new, 100)
+x_transfer = r_transfer * np.cos(transfer_angles)
+y_transfer = r_transfer * np.sin(transfer_angles) * np.cos(np.linspace(0, 0.2, 100))
+z_transfer = r_transfer * np.sin(transfer_angles) * np.sin(np.linspace(0, 0.2, 100))
 
-    fig_3d.add_trace(go.Surface(
-        x=x_earth, y=y_earth, z=z_earth_textured, 
-        surfacecolor=z_earth_textured, # Map colors to heights
-        colorscale=realistic_colors, showscale=False,
-        # Lighting parameters for photorealism (Specular highlights like in photo)
-        lighting=dict(ambient=0.3, diffuse=0.8, specular=0.6, roughness=0.7, fresnel=0.2)
-    ))
+# ==========================================
+# 3. PLOTTING THE PATHS & SPACECRAFT
+# ==========================================
+# Draw Orbits
+fig.add_trace(go.Scatter3d(
+    x=x_old, y=y_old, z=z_old, mode='lines', 
+    line=dict(color='rgba(255, 0, 0, 0.4)', width=2, dash='dot'), name='Decaying Orbit (Critical)'
+))
+fig.add_trace(go.Scatter3d(
+    x=x_new, y=y_new, z=z_new, mode='lines', 
+    line=dict(color='rgba(0, 255, 0, 0.4)', width=2, dash='dot'), name='Target Graveyard Orbit'
+))
 
-    # Add Target Spacecraft
-    fig_3d.add_trace(go.Scatter3d(
-        x=[r_earth+400], y=[0], z=[0], mode='markers',
-        marker=dict(size=8, color='#00FFFF', symbol='diamond', line=dict(color='white', width=1)),
-        name="Target Spacecraft"
-    ))
+# Draw the Push Trajectory (Delta-v burn path)
+fig.add_trace(go.Scatter3d(
+    x=x_transfer, y=y_transfer, z=z_transfer, mode='lines', 
+    line=dict(color='#FFA500', width=5), name='Transfer Maneuver Path'
+))
 
-    # Add Debris Swarm using calculated coordinates
-    deb_x = (r_earth + distances_km*10) * np.cos(np.radians(angles))
-    deb_y = (r_earth + distances_km*10) * np.sin(np.radians(angles))
-    deb_z = np.random.uniform(-2000, 2000, num_debris)
+# Draw the Dead Satellite (Grey, broken look)
+fig.add_trace(go.Scatter3d(
+    x=[x_transfer[10]], y=[y_transfer[10]], z=[z_transfer[10]], mode='markers',
+    marker=dict(size=12, color='#555555', symbol='square', line=dict(color='white', width=1)),
+    name='Dead Target Satellite'
+))
 
-    fig_3d.add_trace(go.Scatter3d(
-        x=deb_x, y=deb_y, z=deb_z, mode='markers',
-        marker=dict(size=4, color=colors, opacity=0.9),
-        name="Tracked Debris"
-    ))
+# Draw Sārathiḥ (The active pusher satellite attached to it)
+fig.add_trace(go.Scatter3d(
+    # Positioned right next to the dead satellite (Pushing it)
+    x=[x_transfer[10] - 150], y=[y_transfer[10] - 150], z=[z_transfer[10] - 50], mode='markers',
+    marker=dict(size=8, color='#00FFFF', symbol='diamond', line=dict(color='white', width=2)),
+    name='Sārathiḥ (Active Tug)'
+))
 
-    fig_3d.update_layout(
-        scene=dict(
-            xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False),
-            bgcolor='black' # Deep space background
-        ),
-        margin=dict(l=0, r=0, t=0, b=0),
-        height=550, showlegend=False,
-        scene_camera=dict(eye=dict(x=1.2, y=1.2, z=0.8))
-    )
-    st.plotly_chart(fig_3d, use_container_width=True)
+# Add Exhaust/Thrust visual (A small cone/line behind Sarathih)
+fig.add_trace(go.Scatter3d(
+    x=[x_transfer[10]-150, x_transfer[10]-400], 
+    y=[y_transfer[10]-150, y_transfer[10]-400], 
+    z=[z_transfer[10]-50, z_transfer[10]-50], 
+    mode='lines', line=dict(color='#00FFFF', width=3), name='Thrust Vector'
+))
 
+# ==========================================
+# 4. CINEMATIC SCENE SETUP
+# ==========================================
+fig.update_layout(
+    scene=dict(
+        xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False),
+        bgcolor='#000000', # Pitch black deep space
+        camera=dict(
+            # Focused camera angle on the maneuver
+            eye=dict(x=0.8, y=-1.5, z=0.5),
+            center=dict(x=0.1, y=0, z=0)
+        )
+    ),
+    margin=dict(l=0, r=0, t=0, b=0),
+    height=650,
+    legend=dict(x=0.02, y=0.98, font=dict(color="white"), bgcolor="rgba(0,0,0,0.5)")
+)
 
-# --- RIGHT COLUMN: RADAR & RANKED LIST ---
-with col2:
-    st.markdown("### RADAR VIEW (Slide 6)")
-    # Radar View logic from PPT Slide 6
-    fig_radar = go.Figure()
-    fig_radar.add_trace(go.Scatterpolar(
-        r=distances_km, theta=angles, mode='markers',
-        marker=dict(color=colors, size=8, line=dict(color='white', width=1)),
-        hovertext=[f"Score: {s}/100<br>TCA: {d:.1f}km" for s, d in zip(risk_scores, distances_km)],
-        hoverinfo='text', name="Debris"
-    ))
-    
-    # Radar Danger Zones
-    fig_radar.add_shape(type="circle", xref="x", yref="y", x0=-10, y0=-10, x1=10, y1=10, line_color="red", fillcolor="red", opacity=0.3)
-    fig_radar.add_shape(type="circle", xref="x", yref="y", x0=-50, y0=-50, x1=50, y1=50, line_color="orange", fillcolor="orange", opacity=0.2)
-    fig_radar.add_shape(type="circle", xref="x", yref="y", x0=-150, y0=-150, x1=150, y1=150, line_color="green", fillcolor="green", opacity=0.1)
+st.plotly_chart(fig, use_container_width=True)
 
-    fig_radar.update_layout(
-        polar=dict(
-            bgcolor='#111111',
-            angularaxis=dict(showticklabels=False, gridcolor='#333333'),
-            radialaxis=dict(range=[0, 150], showticklabels=True, gridcolor='#555555')
-        ),
-        margin=dict(l=20, r=20, t=20, b=20),
-        height=300, showlegend=False
-    )
-    st.plotly_chart(fig_radar, use_container_width=True)
-
-    # Ranked High-Risk List (From Flowchart / Slide 5 output dashboard)
-    st.markdown("### RANKED HIGH-RISK LIST")
-    
-    # Create DataFrame, sort by Risk Score (Descending) just like PPT logic
-    df = pd.DataFrame({
-        "Debris ID": debris_ids,
-        "Miss Distance (km)": np.round(distances_km, 2),
-        "Rel. Velocity (km/s)": np.round(relative_velocities, 2),
-        "Risk Score (0-100)": risk_scores,
-        "Zone": risk_zones
-    })
-    
-    # Filter only Warning & Critical, sort by highest risk
-    high_risk_df = df[df["Zone"].isin(["CRITICAL", "WARNING"])].sort_values(by="Risk Score (0-100)", ascending=False).reset_index(drop=True)
-    
-    st.dataframe(high_risk_df.head(10), use_container_width=True)
-
-    # Optional Mitigation Plan Trigger (From Slide 4 & 5)
-    if not high_risk_df.empty and high_risk_df.iloc[0]["Risk Score (0-100)"] >= 90:
-        st.error(f"🚨 MITIGATION ALERT: Collision probability high for {high_risk_df.iloc[0]['Debris ID']}. Delta-v maneuver planner activated.")
+# Dashboard Data Panel at the bottom
+col1, col2, col3 = st.columns(3)
+col1.metric("Target Debris ID", "NORAD-49021", "Critical Decay")
+col2.metric("Required Delta-V", "1.24 km/s", "Thrusters Engaged")
+col3.metric("Transfer Status", "In Progress", "ETA: 42 mins")
