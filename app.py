@@ -4,37 +4,37 @@ import numpy as np
 import pandas as pd
 
 # ==========================================
-# PAGE CONFIGURATION & THEME
+# PAGE CONFIGURATION & HIGH-END HUD THEME
 # ==========================================
 st.set_page_config(
-    page_title="Satellite Sārathiḥ | Nakshatra Aerospace",
+    page_title="Satellite Sārathiḥ | Nakshatra Aerospace Mission Control",
     page_icon="🛰️",
     layout="wide"
 )
 
 st.markdown("""
 <style>
-    .stApp { background-color: #010103; color: #FFFFFF; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .stApp { background-color: #000002; color: #FFFFFF; font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; }
     h1, h2, h3 { color: #FFFFFF; letter-spacing: 1.5px; }
-    .metric-container { background-color: #0A0A16; border: 1px solid #22223B; padding: 10px; border-radius: 5px; }
+    .hud-box { background-color: #050510; border: 1px solid #1a1a3a; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,255,255,0.05); }
 </style>
 """, unsafe_allow_html=True)
 
-# Header Section matching PPT Slide 1 & 2
-st.markdown("<h1 style='text-align: center; font-weight: 400;'>SATELLITE SĀRATHIḤ</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #00FFFF; font-size: 15px; letter-spacing: 2px;'>SPACE DEBRIS DETECTION, TRACKING AND MITIGATION PLANNING</p>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #A0A0A0; font-size: 13px;'>Team Elysium | Nakshatra Aerospace Hackathon</p>", unsafe_allow_html=True)
+# Header Section matching PPT Slide 1, 2 & Team Elysium
+st.markdown("<h1 style='text-align: center; font-weight: 300; letter-spacing: 4px;'>SATELLITE SĀRATHIḤ</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #00FFFF; font-size: 15px; letter-spacing: 3px;'>ACTIVE SPACE DEBRIS DETECTION, TRACKING, CONJUNCTION ANALYSIS & MITIGATION PLANNER</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #888888; font-size: 13px;'>Team Elysium | Nakshatra Aerospace Hackathon (Problem Statement 03: Software)</p>", unsafe_allow_html=True)
 st.divider()
 
 # ==========================================
-# LIVE TELEMETRY & STATUS HUD (PPT Slide 5 & 6 Integration)
+# FULL ACTIVE TELEMETRY HUD (Slide 5, 6 & Presentation Metrics)
 # ==========================================
-col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
-col_m1.metric("Scenario 1", "Atmospheric Re-entry", "Thermal Dissolution")
-col_m2.metric("Scenario 2", "Heavy Sat Transfer", "Impulsive Burn Armed")
-col_m3.metric("Safety Protocol", "Zero Orbital Litter", "Fully Compliant")
-col_m4.metric("Risk Engine Score", "0 - 100 Active", "Nominal Threshold")
-col_m5.metric("System Status", "All Systems Online", "Live Simulation")
+c1, c2, c3, c4, c5 = st.columns(5)
+c1.metric("Scenario 1", "Atmospheric Re-entry", "Thermal Dissolution")
+c2.metric("Scenario 2", "Heavy Sat Transfer", "Impulsive Burn Armed")
+c3.metric("Safety Protocol", "Zero Orbital Litter", "Fully Compliant")
+c4.metric("Risk Engine Score", "0 - 100 Active", "Dynamic Threshold")
+c5.metric("System Status", "All Modules Online", "Continuous Live Feed")
 
 st.divider()
 
@@ -44,14 +44,14 @@ st.divider()
 r_earth = 6371 
 num_frames = 60
 
-# Scenario 1: Small Debris Atmospheric Re-entry (Falls & Burns up)
+# Scenario 1: Small Debris Atmospheric Re-entry (Falls & Burns up completely)
 t_burn = np.linspace(0, 1, num_frames)
 r_reentry = np.linspace(r_earth + 300, r_earth + 20, num_frames)
 x_burn = r_reentry * np.cos(t_burn * np.pi * 0.4)
 y_burn = r_reentry * np.sin(t_burn * np.pi * 0.4)
 z_burn = np.zeros_like(t_burn)
 
-# Scenario 2: Large Satellite Orbit Transfer (Impulsive Push to Graveyard Orbit)
+# Scenario 2: Large Satellite Orbit Transfer (Impulsive Push to Safe Graveyard Orbit)
 t_transfer = np.linspace(0, np.pi * 0.7, num_frames)
 r_transfer = np.linspace(r_earth + 400, r_earth + 1600, num_frames)
 x_trans = r_transfer * np.cos(t_transfer)
@@ -59,37 +59,38 @@ y_trans = r_transfer * np.sin(t_transfer)
 z_trans = r_transfer * np.sin(t_transfer) * 0.1
 
 # ==========================================
-# BUILD PHOTOREALISTIC 3D EARTH & SCENARIO
+# BUILD HYPER-REALISTIC TOPOGRAPHICAL EARTH & 3D SCENE
 # ==========================================
 fig_3d = go.Figure()
 
-# Photorealistic Topographical Earth (Oceans, Green Forests, Mountains, Ice)
-u = np.linspace(0, 2 * np.pi, 120)
-v = np.linspace(0, np.pi, 120)
+# High-resolution Photorealistic Earth (Oceans, Green Land, Mountains, Snow/Clouds)
+u = np.linspace(0, 2 * np.pi, 140)
+v = np.linspace(0, np.pi, 140)
 x_e = r_earth * np.outer(np.cos(u), np.sin(v))
 y_e = r_earth * np.outer(np.sin(u), np.sin(v))
 z_e = r_earth * np.outer(np.ones(np.size(u)), np.cos(v))
 
-terrain = np.sin(5*u)*np.cos(5*v) + 0.3*np.sin(12*u)*np.cos(12*v)
-z_topo = z_e + (terrain * 80)
+# Mathematical terrain modeling to make the Earth look organic and realistic
+terrain = np.sin(6*u)*np.cos(6*v) + 0.25*np.sin(15*u)*np.cos(15*v)
+z_topo = z_e + (terrain * 90)
 
 earth_colors = [
-    [0.0, '#010a26'],  # Deep abyss ocean
-    [0.3, '#09214d'],  # Coastal water
-    [0.5, '#194222'],  # Lush green land / forests
-    [0.7, '#4d3920'],  # Mountain terrain
-    [0.9, '#8c7d6d'],  # Rocky peaks
-    [1.0, '#ffffff']   # Polar ice caps & cloud layers
+    [0.0, '#00081f'],  # Deep abyss ocean
+    [0.3, '#041d4a'],  # Shallow shelf water
+    [0.5, '#163b20'],  # Lush green land / forests
+    [0.7, '#42311b'],  # Mountain ranges
+    [0.9, '#7a6d5c'],  # Rocky high peaks
+    [1.0, '#ffffff']   # Polar ice caps and atmospheric cloud gloss
 ]
 
 fig_3d.add_trace(go.Surface(
     x=x_e, y=y_e, z=z_topo, surfacecolor=z_topo, colorscale=earth_colors, showscale=False,
-    lighting=dict(ambient=0.15, diffuse=0.85, specular=1.4, roughness=0.2, fresnel=0.1), name='Earth'
+    lighting=dict(ambient=0.15, diffuse=0.9, specular=1.5, roughness=0.15, fresnel=0.1), name='Earth'
 ))
 
-# Trajectory Paths
-fig_3d.add_trace(go.Scatter3d(x=x_burn, y=y_burn, z=z_burn, mode='lines', line=dict(color='rgba(255, 69, 0, 0.5)', width=2), name='Re-entry Trajectory'))
-fig_3d.add_trace(go.Scatter3d(x=x_trans, y=y_trans, z=z_trans, mode='lines', line=dict(color='rgba(0, 255, 255, 0.4)', width=2, dash='dash'), name='Graveyard Transfer Path'))
+# Trajectory Background Paths
+fig_3d.add_trace(go.Scatter3d(x=x_burn, y=y_burn, z=z_burn, mode='lines', line=dict(color='rgba(255, 69, 0, 0.4)', width=2), name='Re-entry Trajectory'))
+fig_3d.add_trace(go.Scatter3d(x=x_trans, y=y_trans, z=z_trans, mode='lines', line=dict(color='rgba(0, 255, 255, 0.3)', width=2, dash='dash'), name='Graveyard Transfer Path'))
 
 # Dynamic Objects (Initial State)
 fig_3d.add_trace(go.Scatter3d(x=[x_burn[0]], y=[y_burn[0]], z=[z_burn[0]], mode='markers', marker=dict(size=8, color='#FF4500', symbol='circle'), name='Burning Debris'))
@@ -97,7 +98,7 @@ fig_3d.add_trace(go.Scatter3d(x=[x_trans[0]], y=[y_trans[0]], z=[z_trans[0]], mo
 fig_3d.add_trace(go.Scatter3d(x=[x_trans[0] - 100], y=[y_trans[0] - 100], z=[z_trans[0]], mode='markers', marker=dict(size=7, color='#00FFFF', symbol='diamond'), name='Sārathiḥ Tug'))
 fig_3d.add_trace(go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 0], mode='lines', line=dict(color='rgba(0,0,0,0)', width=5), name='Impulsive Flame'))
 
-# Animation Frames Logic
+# Animation Frames Logic (Simultaneous Dual Execution)
 frames = []
 for k in range(num_frames):
     bx, by, bz = x_burn[k], y_burn[k], z_burn[k]
@@ -133,12 +134,12 @@ fig_3d.frames = frames
 
 fig_3d.update_layout(
     scene=dict(xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False), bgcolor='#000000', camera=dict(eye=dict(x=1.2, y=-1.5, z=0.5))),
-    margin=dict(l=0, r=0, t=0, b=0), height=520,
+    margin=dict(l=0, r=0, t=0, b=0), height=530,
     legend=dict(x=0.01, y=0.95, font=dict(color="white"), bgcolor="rgba(0,0,0,0)"),
     updatemenus=[dict(
         type="buttons", showactive=False, x=0.5, y=0.02, xanchor="center", yanchor="bottom",
         buttons=[dict(
-            label="▶ START DUAL-SCENARIO SIMULATION",
+            label="▶ START DUAL-SCENARIO LIVE SIMULATION",
             method="animate",
             args=[None, {"frame": {"duration": 70, "redraw": True}, "fromcurrent": True, "mode": "immediate", "transition": {"duration": 0}, "direction": "forward", "repeat": True}]
         )]
@@ -146,12 +147,12 @@ fig_3d.update_layout(
 )
 
 # ==========================================
-# DASHBOARD LAYOUT (Split View: 3D Simulation + Radar View & Ranked List)
+# INTERACTIVE SPLIT DASHBOARD LAYOUT
 # ==========================================
 col_left, col_right = st.columns([1.3, 1])
 
 with col_left:
-    st.markdown("### 3D AEROSPACE SIMULATION VIEW")
+    st.markdown("### 3D AEROSPACE REALISTIC SIMULATION VIEW")
     st.plotly_chart(fig_3d, use_container_width=True)
 
 with col_right:
@@ -170,11 +171,11 @@ with col_right:
     ))
     fig_radar.update_layout(
         polar=dict(
-            bgcolor='#0A0A12',
-            angularaxis=dict(showticklabels=False, gridcolor='#222233'),
-            radialaxis=dict(range=[0, 180], showticklabels=True, gridcolor='#333344')
+            bgcolor='#0A0A16',
+            angularaxis=dict(showticklabels=False, gridcolor='#1e1e3f'),
+            radialaxis=dict(range=[0, 180], showticklabels=True, gridcolor='#2a2a5a')
         ),
-        margin=dict(l=20, r=20, t=20, b=20), height=210, showlegend=False
+        margin=dict(l=20, r=20, t=20, b=20), height=215, showlegend=False
     )
     st.plotly_chart(fig_radar, use_container_width=True)
 
@@ -188,16 +189,23 @@ with col_right:
     st.dataframe(df_risk, use_container_width=True)
 
 # ==========================================
-# PROJECT DETAILS & METHODOLOGY FOOTER (Slide 3 & 4)
+# SYSTEM FLOWCHART & METHODOLOGY FOOTER (Slide 3 & 4)
 # ==========================================
 st.divider()
-col_f1, col_f2, col_f3 = st.columns(3)
+st.markdown("### SYSTEM ARCHITECTURE & WORKFLOW PIPELINE")
+col_f1, col_f2, col_f3, col_f4, col_f5 = st.columns(5)
 with col_f1:
-    st.markdown("**1. Ingest & Track**")
-    st.caption("Pulls TLE orbital data via Space-Track/Celestrak with SGP4 propagation algorithms.")
+    st.markdown("**1. Data Input**")
+    st.caption("Celestrak / Space-Track TLE ingestion & automated simulated fallbacks.")
 with col_f2:
-    st.markdown("**2. Conjunction Screening**")
-    st.caption("Calculates Time of Closest Approach (TCA), miss distance, and relative velocity.")
+    st.markdown("**2. SGP4 Propagation**")
+    st.caption("High-precision mathematical orbit propagation for position & velocity tracking.")
 with col_f3:
-    st.markdown("**3. Mitigation & Act**")
-    st.caption("Ranks threats via 0-100 risk score and deploys active delta-v orbital transfer maneuvers.")
+    st.markdown("**3. Conjunction Analysis**")
+    st.caption("Calculates Time of Closest Approach (TCA), relative velocity, and miss distance.")
+with col_f4:
+    st.markdown("**4. Risk Engine**")
+    st.caption("Collates collision probability and computes a dynamic 0-100 risk score ranking.")
+with col_f5:
+    st.markdown("**5. Mitigation & Act**")
+    st.caption("Triggers automated alerts, impulsive delta-v burns, and orbital transfers.")
